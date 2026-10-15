@@ -13,6 +13,11 @@ store, switching policy, reversible DID tools, Windows media/audio observers, an
 experimental tray/notification host are implemented. This is a diagnostic MVP awaiting
 physical validation, not a completed seamless-switching product.
 
+The Windows alpha adds guided setup, explicit recovery after sleep/device loss, local
+redacted diagnostics export and OS app-ID audio matching. Successful CI runs include
+a `windows-alpha` artifact with portable x64 binaries, corresponding source, licenses,
+version/commit information and checksums. See the [alpha guide](docs/ALPHA_GUIDE.md).
+
 | Category | Status |
 |---|---|
 | Works | No AirPods switching feature has been verified on physical hardware yet |
@@ -25,6 +30,8 @@ Important limitation: observations expire conservatively (source 5 s, wear/list 
 Safe source/list refresh queries still need protocol evidence. If state expires, the app
 suppresses switching. It never reports sending an ownership command or selecting an
 audio output as takeover success.
+The [refresh-query audit](docs/REFRESH_QUERY_RESEARCH.md) records the evidence gap;
+no guessed query payloads or unsupported polling loop are enabled.
 
 ## Start here
 

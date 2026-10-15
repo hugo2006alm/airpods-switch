@@ -4,6 +4,7 @@ using AirPodsSwitch.Core.Diagnostics;
 using AirPodsSwitch.Core.Protocol;
 using AirPodsSwitch.Core.State;
 using AirPodsSwitch.Core.Switching;
+using AirPodsSwitch.Core.Setup;
 using AirPodsSwitch.Windows.Bluetooth;
 using AirPodsSwitch.Windows.Media;
 
@@ -12,6 +13,10 @@ namespace AirPodsSwitch.Windows.Switching;
 public sealed record LiveOptions(BluetoothAddress Device, BluetoothAddress Radio, string? EndpointId,
     string Transport = "profile-driver", bool OfferSwitch = false);
 public sealed record UserDecision(Guid RequestId, bool Accept);
+public sealed class ConnectionInterruptedException(ConnectionLoss reason) : IOException(ConnectionHealth.Instruction(reason))
+{
+    public ConnectionLoss Reason { get; } = reason;
+}
 
 /// <summary>One serialized owner of protocol state and policy. UI posts request IDs only.</summary>
 public sealed class LiveController(LiveOptions options, EventLog log)
@@ -53,6 +58,7 @@ public sealed class LiveController(LiveOptions options, EventLog log)
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(250));
             SwitchInputs? inputs = null;
             long lastSampleAt = 0;
+            long lastHealthAt = 0;
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
                 Drain(client, epoch);
@@ -62,11 +68,22 @@ public sealed class LiveController(LiveOptions options, EventLog log)
                     throw new IOException("AACP receive channel ended");
                 }
                 long now = MonotonicClock.Milliseconds;
+                if (now - lastHealthAt >= 3000)
+                {
+                    var adapters = await AdapterInventory.ReadAsync(cancellationToken).WaitAsync(TimeSpan.FromSeconds(3), cancellationToken);
+                    var current = await Task.Run(BluetoothInventory.Read, cancellationToken).WaitAsync(TimeSpan.FromSeconds(3), cancellationToken);
+                    var health = ConnectionHealth.Assess(false, true,
+                        adapters.Any(a => a.Address == options.Radio.ToString() && a.RadioState == "On"),
+                        current.Any(r => r.Address == options.Radio.ToString() && r.Devices.Any(d =>
+                            d.Address == options.Device.ToString() && (d.Authenticated || d.Remembered))), true);
+                    if (health != ConnectionLoss.None) throw new ConnectionInterruptedException(health);
+                    lastHealthAt = MonotonicClock.Milliseconds;
+                }
                 if (options.OfferSwitch && (inputs is null || now - lastSampleAt >= 500))
                 {
                     var sample = await media.SampleAsync(options.EndpointId, cancellationToken).WaitAsync(TimeSpan.FromSeconds(3), cancellationToken);
                     if (!sample.Audio.Endpoints.Any(e => e.Id == options.EndpointId))
-                        throw new InvalidOperationException("Mapped AirPods endpoint unavailable; select exact active endpoint in Windows audio settings");
+                        throw new ConnectionInterruptedException(ConnectionLoss.OutputUnavailable);
                     inputs = new(store.Current, options.Radio, sample.State, sample.Render);
                     lastSampleAt = MonotonicClock.Milliseconds;
                 }

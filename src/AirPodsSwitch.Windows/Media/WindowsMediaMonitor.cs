@@ -23,7 +23,8 @@ public sealed class WindowsMediaMonitor
         long at = MonotonicClock.Milliseconds;
         var (state, appId) = filter.Observe(playback, audio.CaptureActive || audio.CommunicationAppActive, at);
         bool correlated = selectedEndpoint is not null && appId is not null && audio.Render.Any(r =>
-            r.EndpointId == selectedEndpoint && !r.IsSystemSound && r.Peak > 0.0001f && WindowsAudioManager.MatchesApp(appId, r.ProcessName));
+            r.EndpointId == selectedEndpoint && !r.IsSystemSound && r.Peak > 0.0001f &&
+            WindowsAudioManager.MatchesApp(appId, r.ProcessName, r.AppUserModelId));
         return new(state, appId, playback, audio, new(correlated, at));
     }
 }

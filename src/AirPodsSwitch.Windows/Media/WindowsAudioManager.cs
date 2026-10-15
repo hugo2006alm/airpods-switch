@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 using System.Diagnostics;
+using AirPodsSwitch.Core.Media;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 
 namespace AirPodsSwitch.Windows.Media;
 
 public sealed record AudioEndpoint(string Id, string Name, string InstanceId);
-public sealed record RenderSession(string EndpointId, string ProcessName, uint ProcessId, bool IsSystemSound, float Peak);
+public sealed record RenderSession(string EndpointId, string ProcessName, uint ProcessId, bool IsSystemSound, float Peak,
+    string? AppUserModelId = null);
 public sealed record AudioSnapshot(IReadOnlyList<AudioEndpoint> Endpoints, IReadOnlyList<RenderSession> Render,
     bool CaptureActive, bool CommunicationAppActive);
 
@@ -21,6 +23,7 @@ public static class WindowsAudioManager
         using var enumerator = new MMDeviceEnumerator();
         var endpoints = new List<AudioEndpoint>();
         var render = new List<RenderSession>();
+        var identities = new Dictionary<uint, string?>();
         bool capture = false, communications = false;
         foreach (var device in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
         {
@@ -36,7 +39,9 @@ public static class WindowsAudioManager
                     string process = ProcessName(pid);
                     bool system = session.IsSystemSoundsSession;
                     float peak = session.AudioMeterInformation.MasterPeakValue;
-                    render.Add(new(device.ID, process, pid, system, peak));
+                    if (!identities.TryGetValue(pid, out var identity))
+                        identities[pid] = identity = system ? null : ProcessAppIdentity.Read(pid);
+                    render.Add(new(device.ID, process, pid, system, peak, identity));
                     if (!system && CommunicationApps.Contains(process)) communications = true;
                 }
             }
@@ -56,22 +61,8 @@ public static class WindowsAudioManager
         return new(endpoints, render, capture, communications);
     }
 
-    public static bool MatchesApp(string appId, string processName)
-    {
-        if (string.IsNullOrWhiteSpace(processName)) return false;
-        var app = appId.ToLowerInvariant();
-        var process = processName.ToLowerInvariant();
-        if (app == process || app == process + ".exe") return true;
-        return process switch
-        {
-            "spotify" => app.Contains("spotify", StringComparison.Ordinal),
-            "msedge" => app.Contains("microsoftedge", StringComparison.Ordinal) || app.StartsWith("msedge", StringComparison.Ordinal),
-            "chrome" => app.StartsWith("chrome", StringComparison.Ordinal),
-            "firefox" => app.StartsWith("firefox", StringComparison.Ordinal),
-            "vlc" => app.Contains("videolan", StringComparison.Ordinal) || app == "vlc.exe",
-            _ => false // unresolved AUMID/PID mapping cannot confirm a route
-        };
-    }
+    public static bool MatchesApp(string appId, string processName, string? processAppId = null) =>
+        AppIdentityMatcher.Match(appId, processName, processAppId) != AppMatch.None;
     private static string ProcessName(uint id)
     {
         try { using var process = Process.GetProcessById((int)id); return process.ProcessName; }
