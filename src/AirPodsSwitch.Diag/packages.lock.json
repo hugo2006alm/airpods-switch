@@ -21,7 +21,7 @@
       "airpodsswitch.windows": {
         "type": "Project",
         "dependencies": {
-          "AirPodsSwitch.Core": "[1.0.0, )",
+          "AirPodsSwitch.Core": "[0.1.0-alpha.1, )",
           "NAudio.Wasapi": "[2.2.1, )"
         }
       }
