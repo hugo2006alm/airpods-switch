@@ -34,7 +34,7 @@ try {
     # RID-specific publishing temporarily rewrites NuGet lock targets. Restore the
     # solution's normal graph so publishing does not leave tracked lockfiles dirty.
     try {
-        & $Dotnet restore AirPodsSwitch.slnx
+        & $Dotnet restore AirPodsSwitch.slnx --force-evaluate
         if ($LASTEXITCODE -ne 0) { throw 'Canonical solution restore failed after publish' }
     } finally { Pop-Location }
 }

@@ -81,6 +81,8 @@ timeouts, media debounce, exact registry kinds/absence, backup integrity, rollba
 initialization/disposal and log secret suppression. Tests never edit the system registry.
 
 Dependency versions/content hashes live in committed `packages.lock.json` files.
+After changing the application version, run `dotnet restore AirPodsSwitch.slnx --force-evaluate`
+and commit any project-reference version metadata changes before packaging.
 The GitHub Actions workflow in [`.github/workflows/build.yml`](../.github/workflows/build.yml)
 runs on pushes to `main` and pull requests. It restores in locked mode, builds the full
 Windows solution, runs deterministic tests and synthetic replay, packages a Windows alpha
