@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using AirPodsSwitch.Core.Media;
 using AirPodsSwitch.Core.State;
 using AirPodsSwitch.Core.Switching;

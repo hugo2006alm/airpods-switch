@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 // Device interface and SDU transport adapted from librepods-windowsbridge contributors.
 // Exact source: docs/UPSTREAM_MAP.md. Original implementation rewritten with managed
 // asynchronous I/O and explicit bounded lifetime; no driver binaries or installers included.
