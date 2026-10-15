@@ -13,4 +13,11 @@ try {
         Copy-Item -LiteralPath third_party -Destination $taskOutput -Recurse -Force
     }
     Write-Output 'Published Windows x64 programs under artifacts/. No drivers or system changes applied.'
-} finally { Pop-Location }
+} finally {
+    # RID-specific publishing temporarily rewrites NuGet lock targets. Restore the
+    # solution's normal graph so publishing does not leave tracked lockfiles dirty.
+    try {
+        & $Dotnet restore AirPodsSwitch.slnx
+        if ($LASTEXITCODE -ne 0) { throw 'Canonical solution restore failed after publish' }
+    } finally { Pop-Location }
+}
