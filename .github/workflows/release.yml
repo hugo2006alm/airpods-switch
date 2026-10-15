@@ -1,0 +1,56 @@
+name: Prepare alpha release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag on main, matching the project version (e.g. v0.1.0-alpha.1)'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: alpha-release-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate release source
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+-alpha\.\d+$') { throw 'Expected an alpha version tag' }
+          $tagCommit = git rev-parse "refs/tags/$($env:RELEASE_TAG)^{commit}"
+          if ($LASTEXITCODE -ne 0 -or $tagCommit -ne (git rev-parse HEAD)) { throw 'Checkout must match the existing tag' }
+          git merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE -ne 0) { throw 'Release source must already be merged to main' }
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.402
+      - run: dotnet restore AirPodsSwitch.slnx --locked-mode
+      - run: dotnet build AirPodsSwitch.slnx -c Release --no-restore
+      - run: dotnet test tests/AirPodsSwitch.Tests -c Release --no-build
+      - name: Package binaries and corresponding source
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: ./scripts/package.ps1 -ExpectedVersion ($env:RELEASE_TAG.Substring(1))
+      - name: Create draft prerelease for owner review
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $assets = @(Get-ChildItem artifacts/packages -File | ForEach-Object FullName)
+          gh release create $env:RELEASE_TAG @assets --verify-tag --draft --prerelease --title "AirPods Switch $($env:RELEASE_TAG)" --notes-file docs/ALPHA_RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed; existing releases are never overwritten' }

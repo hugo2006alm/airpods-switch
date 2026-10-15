@@ -8,6 +8,7 @@ namespace AirPodsSwitch.Tray;
 
 internal sealed class NotificationManager : IDisposable
 {
+    private string? currentTag;
     public event Action<UserDecision>? Action;
     public NotificationManager()
     {
@@ -24,6 +25,7 @@ internal sealed class NotificationManager : IDisposable
             .AddButton(new AppNotificationButton("Switch").AddArgument("action", "switch").AddArgument("requestId", requestId.ToString()))
             .BuildNotification();
         notification.Tag = requestId.ToString("N");
+        currentTag = notification.Tag;
         AppNotificationManager.Default.Show(notification);
     }
     private void Invoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
@@ -32,7 +34,12 @@ internal sealed class NotificationManager : IDisposable
             args.Arguments.TryGetValue("action", out string? action) && action is "switch" or "reject")
             Action?.Invoke(new(requestId, action == "switch"));
     }
-    public async Task ClearAsync() => await AppNotificationManager.Default.RemoveAllAsync();
+    public async Task ClearAsync()
+    {
+        // Late cleanup from an interrupted connection must not remove a newer offer.
+        string? tag = Interlocked.Exchange(ref currentTag, null);
+        if (tag is not null) await AppNotificationManager.Default.RemoveByTagAsync(tag);
+    }
     public void Dispose()
     {
         AppNotificationManager.Default.NotificationInvoked -= Invoked;

@@ -53,3 +53,12 @@ built with zero warnings/errors, passed all 52 tests, replayed fixtures with zer
 packets, and uploaded TRX results. The Windows job took 1 min 44 s. The repository is now
 public at the owner's request, using a standard hosted runner. The run flagged the old
 artifact action's Node 20 runtime; the workflow now pins upload-artifact v7.0.2 (Node 24).
+
+Windows alpha follow-up: guided setup and process app-ID correlation build with zero
+warnings/errors. The versioned package script exercised self-contained CLI replay and
+headless native notification startup, bundled exact runtime notices, generated binary
+and corresponding Git source ZIPs plus checksums, and left the checkout clean. The
+published CLI's local support export was opened and contained counts/flags/version
+metadata without device names, addresses or tray settings. Workflow syntax was checked
+with actionlint 1.7.12 (official download checksum verified). These are software checks,
+not new physical switching, visual UI, or power-cycle results.

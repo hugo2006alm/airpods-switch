@@ -36,6 +36,7 @@ internal static class DiagnosticProgram
                         airpods-diag transport-probe [--radio <local MAC>]
                         airpods-diag ble [--seconds 15]
                         airpods-diag audio
+                        airpods-diag support --file <new-diagnostics.zip>
                         airpods-diag media [--seconds 15]
                         airpods-diag did status|verify
                         airpods-diag did backup --file <new.backup.json>
@@ -69,6 +70,21 @@ internal static class DiagnosticProgram
                     await BleDiagnostic.WatchAsync(new EventLog(Console.Out), cancel.Token);
                     return 0;
                 case "audio": Print(await Task.Run(WindowsAudioManager.Read)); return 0;
+                case "support":
+                    SetupInventory? supportInventory;
+                    try { supportInventory = await SetupInventory.ReadAsync(cancel.Token); }
+                    catch (Exception) when (!cancel.IsCancellationRequested) { supportInventory = null; }
+                    var supportSummary = new DiagnosticsSummary(
+                        typeof(DiagnosticProgram).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+                            .Cast<System.Reflection.AssemblyInformationalVersionAttribute>().Single().InformationalVersion,
+                        Environment.OSVersion.Version.ToString(), "unknown", false, false, false, false,
+                        supportInventory?.Radios.Count, supportInventory?.Radios.Sum(r => r.Devices.Count),
+                        supportInventory?.Outputs.Count, supportInventory?.DriverInterfaces.Count,
+                        supportInventory is not null, false);
+                    var supportFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AirPodsSwitch");
+                    DiagnosticsBundle.Export(Require(options, "file"), supportSummary, DiagnosticsBundle.FindRecentLogs(supportFolder));
+                    Print(new { result = "Local redacted support ZIP created; no raw logs, addresses, names, settings, backups or keys" });
+                    return 0;
                 case "did": return Did(args.ElementAtOrDefault(1) ?? "status", options);
                 case "replay": return await ReplayAsync(Require(options, "file"), options.ContainsKey("include-addresses"), cancel.Token);
                 case "media":

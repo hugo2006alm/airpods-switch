@@ -27,6 +27,11 @@ Current implementation status (2026-10-15):
 | Android bridge | Deliberately deferred; no failed genuine two-host experiment yet |
 
 Required user test: [HARDWARE_EXPERIMENT_01.md](HARDWARE_EXPERIMENT_01.md).
+Windows alpha engineering now includes a versioned binary/source package and manual
+draft-release workflow, readiness checks, explicit recovery after sleep or adapter/output
+loss, redacted support ZIP export (tray and CLI), and process AUMID correlation. PR CI
+builds packages and exercises published native startup. See [alpha guide](ALPHA_GUIDE.md).
+Source refresh research remains [blocked on exact packet evidence](REFRESH_QUERY_RESEARCH.md).
 Remaining engineering after evidence: safe refresh queries, full routing metadata if
 needed, verified driver/direct transport packaging, hardware-proven endpoint correlation,
 and long-running reliability. The technical MVP is **not yet hardware-complete**.

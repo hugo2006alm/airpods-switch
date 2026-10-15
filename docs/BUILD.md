@@ -8,6 +8,8 @@ in `.tools/dotnet`; that directory is ignored and is not a project dependency.
 ```powershell
 .\scripts\build.ps1 -Dotnet "$PWD\.tools\dotnet\dotnet.exe"
 .\scripts\publish.ps1 -Dotnet "$PWD\.tools\dotnet\dotnet.exe"
+# From a clean committed checkout: versioned binaries, corresponding source, checksums.
+.\scripts\package.ps1 -Dotnet "$PWD\.tools\dotnet\dotnet.exe"
 ```
 
 On another PC with SDK installed globally, omit `-Dotnet`. Published self-contained
@@ -24,6 +26,7 @@ include corresponding GPL application source at the same revision.
 # .\scripts\diag.ps1 transport-probe --radio <this PC's Classic MAC>
 .\scripts\diag.ps1 audio
 .\scripts\diag.ps1 media --seconds 15
+.\scripts\diag.ps1 support --file .local\new-diagnostics.zip
 .\scripts\diag.ps1 ble --seconds 15
 .\scripts\diag.ps1 replay --file tests/fixtures/two-host.hex
 .\scripts\diag.ps1 did status
@@ -54,6 +57,11 @@ No autostart entry is installed. Native notifications require successful App SDK
 If unavailable, the status form exposes Switch/Not now for the same eligible request.
 Stale notification actions cannot start a new takeover. No raw MAC appears in normal UI.
 
+See the [alpha guide](ALPHA_GUIDE.md) for readiness checks, missing-driver guidance,
+sleep/device-loss recovery and redacted diagnostics export. Refreshing selections requires
+output confirmation again. Reconnection remains explicit. Packaged versions include
+runtime notices, version/commit information, the guide and a corresponding source ZIP.
+
 Diagnostic native startup test constructs a notification object without registering or
 displaying one:
 
@@ -73,8 +81,20 @@ timeouts, media debounce, exact registry kinds/absence, backup integrity, rollba
 initialization/disposal and log secret suppression. Tests never edit the system registry.
 
 Dependency versions/content hashes live in committed `packages.lock.json` files.
+After changing the application version, run `dotnet restore AirPodsSwitch.slnx --force-evaluate`
+and commit any project-reference version metadata changes before packaging.
+Publishing restores the full canonical graph and normalizes generated lockfile line
+endings to the repository's LF format; packaging still rejects any source/content change.
 The GitHub Actions workflow in [`.github/workflows/build.yml`](../.github/workflows/build.yml)
 runs on pushes to `main` and pull requests. It restores in locked mode, builds the full
-Windows solution, runs deterministic tests and synthetic replay, and uploads test results
+Windows solution, runs deterministic tests and synthetic replay, packages a Windows alpha
+with its source and checksums, and uploads the packages and test results
 even when a step fails. Actions are pinned to commit hashes and the job has read-only
 repository permissions. CI cannot satisfy physical hardware gates.
+
+`Prepare alpha release` is a separate manual workflow. After the owner merges the PR,
+create an existing `v<Version>` alpha tag on a commit contained in `main`, then dispatch
+the workflow with that tag. It verifies tag/version/ancestry, rebuilds/tests/packages,
+and creates a **draft prerelease** with binary/source ZIPs and SHA256SUMS. Review the
+draft before publishing; the workflow never overwrites existing releases. It uses
+write permissions only in the release job. PR CI retains read-only permissions.

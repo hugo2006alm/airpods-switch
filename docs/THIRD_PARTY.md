@@ -31,6 +31,9 @@ The application's GPL does not relicense those unmodified Microsoft runtime bina
 retain their terms/notices and verify the chosen redistribution arrangement before a
 public binary release. No Microsoft source is copied or modified by this project.
 .NET/Windows SDK/runtime packages retain their distributed license/notice files.
+Publishing copies the license/notice files from the exact restored .NETCore and Windows
+Desktop runtime versions named by each published runtime configuration. Versioned alpha
+packages include these files and a Git source archive at the binaries' exact commit.
 `scripts/publish.ps1` includes GPL, this attribution file and `third_party/`; keep runtime/package notices
 and supply corresponding application source at the same revision if distributing binaries.
 Installed third-party profile drivers remain separate system prerequisites: availability,
