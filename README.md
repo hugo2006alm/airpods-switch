@@ -75,6 +75,5 @@ not vendored. No drivers, private keys or registry backups are committed.
 
 ## Visibility
 
-Private initially. The owner can later make it public with GitHub repository settings,
-or `gh repo edit hugo2006alm/airpods-switch --visibility public --accept-visibility-change-consequences`.
-Review logs, licensing, and secrets before publishing.
+Public, independent repository. CI uses the standard `windows-latest` GitHub-hosted
+runner, whose use is [free for public repositories](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).

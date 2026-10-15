@@ -15,7 +15,7 @@ Current implementation status (2026-10-15):
 
 | Stage | Status |
 |---|---|
-| Repository / research / license / ADR | Complete; independent private repository, pinned read-only references |
+| Repository / research / license / ADR | Complete; independent public repository, pinned read-only references |
 | Bluetooth diagnostics | Implemented and locally exercised; one radio, no paired AirPods on development host |
 | AACP initialization, parser, model, battery, ear | Implemented; synthetic tests pass; live transport/firmware gate pending |
 | Source / host list / ownership | Notification parsing/store implemented; exact query bodies still unresolved |
