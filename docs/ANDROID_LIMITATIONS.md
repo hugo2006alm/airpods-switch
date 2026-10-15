@@ -27,6 +27,17 @@ The project adds no reflection/privileged Android workaround.
 
 ## Explicit takeover gate and indirect effects
 
+**VERIFIED IN SOURCE:** `utils/KotlinModule.kt` reads `vendor_id_hook` and calls
+`NativeBridge.setSdpHook`. Native `android/app/src/main/cpp/l2c_fcr_hook.cpp`,
+`fake_BTA_DmSetLocalDiRecord`, changes the local SDP DI record's `vendor` to 0x004C
+and `vendor_id_source` to 0x0001. In the audited implementation, these assignments are
+**unconditional once the hook is installed**: the preference check guards an earlier
+call to the original function, not the writes. The function also calls the original
+multiple times. Thus a preference value alone is not proof of the published DID.
+This is actual DID-record manipulation,
+not controller manufacturer or BLE advertisement spoofing. The hook runs in the
+Bluetooth process via privileged instrumentation; this project does not port it to the phone.
+
 **VERIFIED IN SOURCE:** `AirPodsService.takeOver`, lines 2450 onward:
 
 1. The special `reverse` branch sends owns=1, media information, reverse relay and

@@ -24,3 +24,21 @@ and Win32/socket error. No provider-creation result is a multipoint claim.
 Physical gates remain: real model/firmware, phone OS support, L2CAP exchange, two-host
 state, DID publication/acceptance, ownership/source transition, and audible playback.
 Do not promote the technical MVP to hardware-validated until the experiment passes.
+
+Follow-up **VERIFIED LOCALLY**: explicit L2CAP local bind on the enumerated radio
+returned Winsock **10050 (NetworkDown)** while WinRT reported that radio **On**. No
+remote connection was attempted. Record this provider/adapter limitation, not an AirPods
+or mixed-DID result. Default profile-driver interface list was empty. A future direct
+test must retain bind-stage errors; changing DID is not a transport fix established here.
+
+Final local software validation: **52 deterministic tests passed**, whole solution built
+with zero warnings/errors, and Windows x64 diagnostic/tray programs published locally.
+Published CLI inventory, BLE scan startup/cancellation, media debounce, synthetic replay,
+and DID status/backup were exercised. No system DID writes occurred. A native notification
+object was constructed successfully by the published tray's headless self-test, without
+registering or showing a notification. Visual tray behavior and action delivery remain
+unverified. No source/ownership or audible playback result was observed from physical buds.
+
+GitHub CI workflow creation was rejected for missing OAuth `workflow` scope. A reviewed
+workflow example is stored as documentation; no active CI run is claimed. Unpushed
+workflow commit was replaced locally; published remote history was not rewritten.

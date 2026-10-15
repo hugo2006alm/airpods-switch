@@ -1,0 +1,26 @@
+name: Windows build and deterministic tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.402
+      - run: dotnet restore AirPodsSwitch.slnx --locked-mode
+      - run: dotnet build AirPodsSwitch.slnx -c Release --no-restore
+      - run: dotnet test tests/AirPodsSwitch.Tests -c Release --no-build --logger "trx;LogFileName=tests.trx"
+      - name: Replay synthetic protocol fixtures
+        run: dotnet src/AirPodsSwitch.Diag/bin/Release/net10.0-windows10.0.26100.0/airpods-diag.dll replay --file tests/fixtures/two-host.hex
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: deterministic-test-results
+          path: tests/AirPodsSwitch.Tests/TestResults/*.trx

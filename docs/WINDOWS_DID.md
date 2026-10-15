@@ -13,6 +13,8 @@ driver behavior on USB and integrated radios must be measured separately. The to
 records current OS, selected radios and original values; it never restarts services/radios.
 
 **PLAUSIBLE / REQUIRES TESTING:** source=1, vendor=0x004C as a useful AirPods identity.
+The choice matches LibrePods' native `fake_BTA_DmSetLocalDiRecord` field writes
+(**VERIFIED IN SOURCE**); it is not a guess based only on the company identifier.
 This does not change USB VID/PID, controller manufacturer, BLE manufacturer payload,
 hardware firmware, or add Apple host capabilities. It does not prove multipoint.
 
