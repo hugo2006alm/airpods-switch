@@ -1,0 +1,3 @@
+# Only this owner's approval satisfies the required code-owner review.
+# This wildcard also protects this file and the CI workflow.
+* @hugo2006alm

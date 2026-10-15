@@ -77,3 +77,5 @@ not vendored. No drivers, private keys or registry backups are committed.
 
 Public, independent repository. CI uses the standard `windows-latest` GitHub-hosted
 runner, whose use is [free for public repositories](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+See the [main branch policy](docs/REPOSITORY_POLICY.md) for required owner review,
+passing CI, merge permissions, and the owner's PR bypass option.
