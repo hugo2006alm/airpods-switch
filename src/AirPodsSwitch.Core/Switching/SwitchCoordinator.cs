@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using AirPodsSwitch.Core.Protocol;
 using AirPodsSwitch.Core.State;
 
@@ -38,10 +38,13 @@ public sealed class SwitchCoordinator
                 return Finish(false, "Control transport changed", now);
             if (input.Media.CallOrCaptureActive || input.AirPods.Source?.Value.Type == AudioSourceType.Call)
                 return Finish(false, "Call protection activated", now);
-            if (!input.Media.Meaningful || input.Media.SessionId != request.SessionId)
+            if (!input.Media.Meaningful || input.Media.SessionId != request.SessionId ||
+                input.Media.At > now || now - input.Media.At > 2000)
                 return Finish(false, "Windows media stopped or changed", now);
             if (input.AirPods.Wear is not { } wear || !wear.Fresh(now, request.Epoch, 15000) || !wear.Value.IsWorn)
                 return Finish(false, "Wear evidence lost", now);
+            if (input.AirPods.Source is null || input.AirPods.Devices is null)
+                return Finish(false, "Protocol state invalidated during takeover", now);
             if (input.AirPods.ReleaseAt >= request.RequestedAt)
                 return Finish(false, "Other host requested release or reverse", now);
             if (now >= request.Deadline) return Finish(false, "Takeover timed out; previous source retained as evidence", now);

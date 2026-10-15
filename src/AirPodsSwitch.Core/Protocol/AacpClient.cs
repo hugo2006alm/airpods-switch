@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using System.Threading.Channels;
 using AirPodsSwitch.Core.Diagnostics;
 using AirPodsSwitch.Core.State;
@@ -53,11 +53,14 @@ public sealed class AacpClient(IBluetoothTransport transport, EventLog log) : IA
                 if (!parsed.Success)
                 {
                     log.Write("aacp", "malformed_sdu", parsed.Error!);
+                    await incoming.Writer.WriteAsync(new(new ProtocolStateInvalidated(), at), cancellationToken)
+                        .AsTask().WaitAsync(TimeSpan.FromSeconds(1), cancellationToken);
                     continue;
                 }
                 if (parsed.Event is HandshakeAcknowledged) handshake.TrySetResult();
                 if (parsed.Event is not OtherPacket)
-                    await incoming.Writer.WriteAsync(new(parsed.Event!, at), cancellationToken);
+                    await incoming.Writer.WriteAsync(new(parsed.Event!, at), cancellationToken)
+                        .AsTask().WaitAsync(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }

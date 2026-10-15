@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using System.Threading.Channels;
 using AirPodsSwitch.Core.Diagnostics;
 using AirPodsSwitch.Core.Protocol;
@@ -88,11 +88,11 @@ public sealed class LiveController(LiveOptions options, EventLog log)
                         await client.SendAsync(AacpProtocol.SetOwnership(true), cancellationToken);
                         Drain(client, epoch);
                         var guard = coordinator.Update(inputs with { AirPods = store.Current }, MonotonicClock.Milliseconds);
-                        if (guard.Action == SwitchAction.Failed) { Emit(guard); continue; }
+                        if (guard.Action is SwitchAction.Failed or SwitchAction.Confirmed) { Emit(guard); continue; }
                         await client.SendAsync(AacpProtocol.Hijack(target), cancellationToken);
                         log.Write("switch", "commands_sent", "Experimental minimum sequence; no success implied", requestId: decision.RequestId);
                     }
-                    catch (Exception error) when (error is not OperationCanceledException)
+                    catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
                     {
                         log.Write("transport", "takeover_write_failed", error.GetType().Name, requestId: decision.RequestId);
                         Emit(coordinator.SendFailed(MonotonicClock.Milliseconds));

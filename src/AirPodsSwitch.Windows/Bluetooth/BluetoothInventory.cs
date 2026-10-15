@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -24,8 +24,8 @@ public static class BluetoothInventory
         var find = Native.BluetoothFindFirstRadio(ref parameters, out var radio);
         if (find == IntPtr.Zero)
         {
-            radio?.Dispose();
             var error = Marshal.GetLastWin32Error();
+            radio?.Dispose();
             if (error is 259 or 1168) return result; // no radio, not a successful connection
             throw new Win32Exception(error, "Bluetooth radio enumeration failed");
         }
@@ -81,7 +81,7 @@ public static class BluetoothInventory
                     services = new Guid[count];
                     serviceResult = Native.BluetoothEnumerateInstalledServices(radio, ref device, ref count, services);
                 }
-                if (serviceResult != 0 && serviceResult != 234)
+                if (serviceResult != 0)
                     throw new Win32Exception((int)serviceResult, "Installed service enumeration failed");
                 result.Add(new PairedDevice(FormatAddress(device.Address), device.Name, device.Connected,
                     device.Remembered, device.Authenticated, device.ClassOfDevice,

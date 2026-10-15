@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using System.Text.Json;
 using AirPodsSwitch.Core.Diagnostics;
 using AirPodsSwitch.Core.Did;
@@ -16,11 +16,11 @@ internal static class DiagnosticProgram
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        using var cancel = new CancellationTokenSource();
         try
         {
             var command = args.FirstOrDefault() ?? "--help";
             var options = Options(args.Skip(command == "did" ? 2 : 1).ToArray());
-            using var cancel = new CancellationTokenSource();
             Console.CancelKeyPress += (_, e) => { e.Cancel = true; cancel.Cancel(); };
             if (options.TryGetValue("seconds", out var seconds))
             {
@@ -33,7 +33,8 @@ internal static class DiagnosticProgram
                 case "help": case "--help":
                     Console.WriteLine("""
                         airpods-diag inventory
-                        airpods-diag transport-probe
+                        airpods-diag transport-probe [--radio <local MAC>]
+                        airpods-diag ble [--seconds 15]
                         airpods-diag audio
                         airpods-diag media [--seconds 15]
                         airpods-diag did status|verify
@@ -55,11 +56,18 @@ internal static class DiagnosticProgram
                         windows = Environment.OSVersion.VersionString,
                         administrator = WindowsDidRegistryStore.IsAdministrator(),
                         radios = BluetoothInventory.Read(),
+                        adapterIdentifiers = await AdapterInventory.ReadAsync(cancel.Token),
                         profileDriverInterfaces = ProfileDriverTransport.InterfacePaths(),
                         aacp = "SDP service/interface presence is not a live link; use explicit watch experiment"
                     });
                     return 0;
-                case "transport-probe": Print(SocketProbe.Run()); return 0;
+                case "transport-probe":
+                    Print(SocketProbe.Run(options.TryGetValue("radio", out var localRadio) ? BluetoothAddress.Parse(localRadio) : null));
+                    return 0;
+                case "ble":
+                    if (!options.ContainsKey("seconds")) cancel.CancelAfter(TimeSpan.FromSeconds(15));
+                    await BleDiagnostic.WatchAsync(new EventLog(Console.Out), cancel.Token);
+                    return 0;
                 case "audio": Print(await Task.Run(WindowsAudioManager.Read)); return 0;
                 case "did": return Did(args.ElementAtOrDefault(1) ?? "status", options);
                 case "replay": return await ReplayAsync(Require(options, "file"), options.ContainsKey("include-addresses"), cancel.Token);
@@ -86,10 +94,10 @@ internal static class DiagnosticProgram
                 default: throw new ArgumentException("Unknown command; use --help");
             }
         }
-        catch (OperationCanceledException) { return 0; }
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested) { return 0; }
         catch (Exception error) when (error is not OutOfMemoryException)
         {
-            new EventLog(Console.Error).Write("diagnostic", "error", $"{error.GetType().Name}: {error.Message}");
+            new EventLog(Console.Error).Write("diagnostic", "error", $"{error.GetType().Name}; code=0x{error.HResult:X8}; {error.Message}");
             return 1;
         }
     }
@@ -106,6 +114,11 @@ internal static class DiagnosticProgram
                     windows = Environment.OSVersion.VersionString,
                     administrator = WindowsDidRegistryStore.IsAdministrator(), radios = BluetoothInventory.Read(),
                     configuration = manager.Status(), bthport = registry.RelevantConfiguration(),
+                    valueSummary = manager.Status().Values.ToDictionary(p => p.Key, p => new
+                    {
+                        p.Value.Present, p.Value.Kind,
+                        dword = p.Value is { Present: true, Kind: 4, Data.Length: 4 } ? BitConverter.ToUInt32(p.Value.Data) : (uint?)null
+                    }),
                     verification = "CONFIGURATION ONLY; external SDP not observed; remote AirPods identity acceptance not confirmed",
                     mutations = "none"
                 }); return 0;
@@ -191,13 +204,14 @@ internal static class DiagnosticProgram
             if (line.Length == 0) continue;
             var parsed = AacpProtocol.Parse(Convert.FromHexString(string.Concat(line.Where(c => !char.IsWhiteSpace(c)))));
             if (!parsed.Success) { log.Write("replay", "rejected", parsed.Error!); rejected++; continue; }
-            if (store.Apply(parsed.Event!, MonotonicClock.Milliseconds, epoch)) Print(StateReport(store.Current, log, includeAddresses));
+            if (store.Apply(parsed.Event!, MonotonicClock.Milliseconds, epoch)) Print(StateReport(store.Current, log, includeAddresses, simulation: true));
         }
         log.Write("replay", "complete", $"SIMULATED packet input; rejected={rejected}; no hardware or transport");
         return rejected == 0 ? 0 : 3;
     }
-    private static object StateReport(AirPodsState state, EventLog log, bool includeAddresses) => new
+    private static object StateReport(AirPodsState state, EventLog log, bool includeAddresses, bool simulation = false) => new
     {
+        evidence = simulation ? "VERIFIED LOCALLY: synthetic parser replay; no hardware" : "PLAUSIBLE / REQUIRES TESTING: live protocol interpretation",
         timestamp = DateTimeOffset.UtcNow, state.Epoch, state.ControlConnected,
         model = state.Identity?.Value.Model?.Name ?? "Unknown", modelNumber = state.Identity?.Value.ModelNumber,
         firmware = state.Identity?.Value.Firmware, wear = state.Wear?.Value, batteries = state.Batteries?.Value,

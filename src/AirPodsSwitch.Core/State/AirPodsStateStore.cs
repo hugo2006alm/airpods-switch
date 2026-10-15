@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using System.Collections.Immutable;
 using System.Diagnostics;
 using AirPodsSwitch.Core.Protocol;
@@ -43,6 +43,9 @@ public sealed class AirPodsStateStore
         var state = Current;
         switch (value)
         {
+            case ProtocolStateInvalidated:
+                Current = state with { Source = null, Devices = null, Wear = null, OwnsConnection = null };
+                return true;
             case SourceReceived e when state.Source is null || at >= state.Source.At:
                 Current = state with { Source = new(e.Source, at, epoch) }; return true;
             case DevicesReceived e when state.Devices is null || at >= state.Devices.At:

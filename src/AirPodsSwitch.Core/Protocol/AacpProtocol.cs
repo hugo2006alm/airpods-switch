@@ -31,6 +31,7 @@ public sealed record BatteryReceived(ImmutableArray<BatteryState> Batteries) : P
 public sealed record IdentityReceived(DeviceIdentity Identity) : ProtocolEvent;
 public sealed record RoutingReceived(BluetoothAddress Sender, bool Release, bool Reverse) : ProtocolEvent;
 public sealed record OtherPacket(ushort Opcode, int Length) : ProtocolEvent;
+public sealed record ProtocolStateInvalidated : ProtocolEvent;
 public sealed record ParseResult(ProtocolEvent? Event, string? Error)
 {
     public bool Success => Event is not null;
@@ -90,8 +91,9 @@ public static class AacpProtocol
             case 0x0E:
                 if (packet.Length != 13) return Bad("Audio source requires 13 bytes");
                 if (packet[12] > 2) return Bad("Unknown audio source type");
-                return Ok(new SourceReceived(new(BluetoothAddress.FromBytes(packet.Slice(6, 6), true),
-                    (AudioSourceType)packet[12])));
+                var sourceAddress = BluetoothAddress.FromBytes(packet.Slice(6, 6), true);
+                if (packet[12] != 0 && !sourceAddress.IsUsableHost) return Bad("Active source has invalid host identity");
+                return Ok(new SourceReceived(new(sourceAddress, (AudioSourceType)packet[12])));
             case 0x2E:
                 if (packet.Length < 9) return Bad("Truncated connected-host count");
                 int count = packet[8];

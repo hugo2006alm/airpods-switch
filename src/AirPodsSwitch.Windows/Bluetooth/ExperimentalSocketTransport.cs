@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 using System.Net;
 using System.Net.Sockets;
 using AirPodsSwitch.Core.Protocol;
@@ -15,12 +15,16 @@ public sealed class ExperimentalSocketTransport : IBluetoothTransport
     {
         if (socket is not null) throw new InvalidOperationException("Transport already open");
         socket = new Socket((AddressFamily)32, SocketType.Stream, (ProtocolType)0x100);
-        socket.Bind(new BluetoothEndpoint(local, uint.MaxValue));
+        try { socket.Bind(new BluetoothEndpoint(local, uint.MaxValue)); }
+        catch (SocketException error)
+        { throw new IOException($"Experimental L2CAP bind failed: {error.SocketErrorCode} ({error.NativeErrorCode}); channel support not established", error); }
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(8));
         using var cancel = timeout.Token.Register(() => socket?.Dispose());
         // Blocking connect occurs on worker; closing socket cancels the kernel operation.
-        await Task.Run(() => socket.Connect(new BluetoothEndpoint(remote, 0x1001)), timeout.Token);
+        try { await Task.Run(() => socket.Connect(new BluetoothEndpoint(remote, 0x1001)), timeout.Token); }
+        catch (SocketException error)
+        { throw new IOException($"Experimental L2CAP PSM 0x1001 connect failed: {error.SocketErrorCode} ({error.NativeErrorCode})", error); }
         timeout.Token.ThrowIfCancellationRequested();
     }
     public async Task SendAsync(ReadOnlyMemory<byte> packet, CancellationToken cancellationToken)
