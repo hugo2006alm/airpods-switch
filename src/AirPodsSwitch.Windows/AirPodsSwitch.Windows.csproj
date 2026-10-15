@@ -4,5 +4,8 @@
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../AirPodsSwitch.Core/AirPodsSwitch.Core.csproj" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../AirPodsSwitch.Core/AirPodsSwitch.Core.csproj" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+  </ItemGroup>
 </Project>
