@@ -56,6 +56,11 @@ Keep the matching source ZIP and bundled license/notice files with distributed c
     } | Set-Content -LiteralPath $taskChecksums -Encoding utf8
     & $Dotnet restore AirPodsSwitch.slnx --locked-mode
     if ($LASTEXITCODE -ne 0) { throw 'Canonical dependency lock validation failed' }
-    if (git status --porcelain --untracked-files=normal) { throw 'Packaging changed tracked source/dependency files' }
+    $taskAfterPackaging = git status --porcelain --untracked-files=normal
+    if ($taskAfterPackaging) {
+        $taskAfterPackaging | Write-Output
+        git diff -- '**/packages.lock.json'
+        throw 'Packaging changed tracked source/dependency files'
+    }
     Write-Output "Versioned binary/source ZIPs and SHA-256 checksums: $taskDestination"
 } finally { Pop-Location }
