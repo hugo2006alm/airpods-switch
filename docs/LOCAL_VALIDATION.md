@@ -47,3 +47,9 @@ Follow-up: GitHub CLI reauthentication granted `workflow` scope. The reviewed wo
 is now installed at `.github/workflows/build.yml`. Its exact restore/build/test/replay
 commands passed locally: 52 tests, zero build warnings/errors, and no rejected synthetic
 packets. Hosted run results are recorded by GitHub Actions separately from local evidence.
+
+**VERIFIED ON GITHUB ACTIONS:** [initial hosted run](https://github.com/hugo2006alm/airpods-switch/actions/runs/38813371292)
+built with zero warnings/errors, passed all 52 tests, replayed fixtures with zero rejected
+packets, and uploaded TRX results. The Windows job took 1 min 44 s. The repository is now
+public at the owner's request, using a standard hosted runner. The run flagged the old
+artifact action's Node 20 runtime; the workflow now pins upload-artifact v7.0.2 (Node 24).
