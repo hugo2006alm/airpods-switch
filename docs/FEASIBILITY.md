@@ -3,6 +3,10 @@
 This is the first substantial report. Exact audited commits and adaptation mapping are
 in [UPSTREAM_MAP.md](UPSTREAM_MAP.md). No physical AirPods/Android switching test has passed.
 
+Local follow-up qualifies the absolute transport assumption: Windows does create an
+L2CAP provider socket. Full PSM/channel exchange remains untested; see
+[LOCAL_VALIDATION.md](LOCAL_VALIDATION.md). This is not evidence Qt's RFCOMM-only backend works.
+
 ## Findings and answers
 
 1. **AirPods 5 support — VERIFIED IN SOURCE.** Current LibrePods has separate AirPods 5

@@ -1,0 +1,26 @@
+# Local validation and hardware gates
+
+2026-10-15: .NET SDK 10.0.402 installed in ignored `.tools/dotnet` for this checkout.
+Core protocol/policy/DID tests run without hardware. The full Windows solution builds
+with warnings treated as errors. See later validation commits for final test totals.
+
+**VERIFIED LOCALLY:** Windows build 26200 (25H2), non-administrator inventory enumerated
+one Classic Bluetooth radio. No paired AirPods were listed. Addresses and personal
+device names are omitted from this report.
+
+**VERIFIED LOCALLY:** both RFCOMM (3) and L2CAP (256) socket creation succeeded.
+`SO_PROTOCOL_INFOW` reports distinct `MSAFD RfComm [Bluetooth]` and
+`MSAFD L2CAP [Bluetooth]` providers with the corresponding protocol numbers. This
+does **not** establish successful bind/connect to PSM 0x1001, encryption, receive SDU
+boundaries or AACP exchange. A provider catalog entry is weaker evidence than those.
+
+The SDK `ws2bth.h` defines BTHPROTO_L2CAP, SOL_L2CAP, packed 30-byte SOCKADDR_BTH, and
+describes port as RFCOMM channel or L2CAP PSM. Microsoft's public socket article still
+documents RFCOMM as supported. The default live path remains the compatible installed
+profile-driver interface. `--transport winsock-experimental` exists solely to measure
+the fuller direct path on actual paired hardware; failure must be retained with stage
+and Win32/socket error. No provider-creation result is a multipoint claim.
+
+Physical gates remain: real model/firmware, phone OS support, L2CAP exchange, two-host
+state, DID publication/acceptance, ownership/source transition, and audible playback.
+Do not promote the technical MVP to hardware-validated until the experiment passes.
