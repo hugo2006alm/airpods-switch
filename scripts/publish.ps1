@@ -36,5 +36,13 @@ try {
     try {
         & $Dotnet restore AirPodsSwitch.slnx --force-evaluate
         if ($LASTEXITCODE -ne 0) { throw 'Canonical solution restore failed after publish' }
+        # NuGet writes CRLF on Windows even though .gitattributes requires LF for JSON.
+        # Preserve every value while restoring the repository's canonical text format.
+        $taskLockPaths = git ls-files -- '**/packages.lock.json'
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot enumerate tracked dependency locks' }
+        foreach ($taskLockPath in $taskLockPaths) {
+            $taskLockText = [IO.File]::ReadAllText((Join-Path $taskRoot $taskLockPath))
+            [IO.File]::WriteAllText((Join-Path $taskRoot $taskLockPath), $taskLockText.Replace("`r`n", "`n"), [Text.UTF8Encoding]::new($false))
+        }
     } finally { Pop-Location }
 }
