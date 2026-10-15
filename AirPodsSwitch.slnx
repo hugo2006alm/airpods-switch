@@ -4,4 +4,7 @@
     <Project Path="src/AirPodsSwitch.Diag/AirPodsSwitch.Diag.csproj" />
     <Project Path="src/AirPodsSwitch.Windows/AirPodsSwitch.Windows.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AirPodsSwitch.Tests/AirPodsSwitch.Tests.csproj" />
+  </Folder>
 </Solution>
