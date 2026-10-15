@@ -97,4 +97,32 @@ public sealed class AlphaTests
         }
         finally { Directory.Delete(folder, recursive: true); }
     }
+
+    [Fact]
+    public void DiscoveryExcludesPrivateFilesAndBoundedTailSurvivesAnOversizedLine()
+    {
+        string folder = Path.Combine(Path.GetTempPath(), "airpods-tail-" + Guid.NewGuid());
+        Directory.CreateDirectory(folder);
+        try
+        {
+            string log = Path.Combine(folder, "session-20261015-123456-001.jsonl");
+            File.WriteAllText(Path.Combine(folder, "settings.private.json"), "personal-data");
+            File.WriteAllText(Path.Combine(folder, "session-personal.jsonl"), "personal-data");
+            File.WriteAllText(Path.Combine(folder, "original.backup.json"), "personal-data");
+            File.WriteAllText(log, new string('x', DiagnosticsBundle.MaxLogBytes + 100) +
+                "\n{\"subsystem\":\"state\",\"eventType\":\"SourceReceived\",\"audioSourceType\":\"Media\"}\n");
+            Assert.Equal(new[] { log }, DiagnosticsBundle.FindRecentLogs(folder));
+            var summary = new DiagnosticsSummary("0.1.0-alpha.1", "10.0.26200.0", "unknown",
+                false, false, false, false, null, null, null, null, false, false);
+            string zip = Path.Combine(folder, "bundle.zip");
+            DiagnosticsBundle.Export(zip, summary, DiagnosticsBundle.FindRecentLogs(folder));
+            using var archive = ZipFile.OpenRead(zip);
+            using var reader = new StreamReader(archive.GetEntry("events/1.jsonl")!.Open());
+            string events = reader.ReadToEnd();
+            Assert.Contains("SourceReceived", events);
+            Assert.DoesNotContain("personal-data", events);
+            Assert.True(events.Length < 1024);
+        }
+        finally { Directory.Delete(folder, recursive: true); }
+    }
 }
