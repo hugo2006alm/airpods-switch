@@ -73,9 +73,8 @@ timeouts, media debounce, exact registry kinds/absence, backup integrity, rollba
 initialization/disposal and log secret suppression. Tests never edit the system registry.
 
 Dependency versions/content hashes live in committed `packages.lock.json` files.
-The CI template in `windows-build.workflow-example.yml` restores in locked mode and
-runs the same Windows build/tests and synthetic replay. **Active CI is not installed:**
-GitHub rejected the workflow push because the authenticated OAuth token lacks `workflow`
-scope. Application/source/docs are pushed normally; local checks provide the current
-validation. If the owner later enables that scope, copy the template to
-`.github/workflows/build.yml` in a normal commit. CI cannot satisfy physical hardware gates.
+The GitHub Actions workflow in [`.github/workflows/build.yml`](../.github/workflows/build.yml)
+runs on pushes to `main` and pull requests. It restores in locked mode, builds the full
+Windows solution, runs deterministic tests and synthetic replay, and uploads test results
+even when a step fails. Actions are pinned to commit hashes and the job has read-only
+repository permissions. CI cannot satisfy physical hardware gates.

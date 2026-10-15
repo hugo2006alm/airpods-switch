@@ -6,6 +6,7 @@
 /logs/
 **/bin/
 **/obj/
+**/TestResults/
 **/.vs/
 **/build/
 *.user

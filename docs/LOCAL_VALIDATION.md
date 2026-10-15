@@ -39,6 +39,11 @@ object was constructed successfully by the published tray's headless self-test, 
 registering or showing a notification. Visual tray behavior and action delivery remain
 unverified. No source/ownership or audible playback result was observed from physical buds.
 
-GitHub CI workflow creation was rejected for missing OAuth `workflow` scope. A reviewed
-workflow example is stored as documentation; no active CI run is claimed. Unpushed
-workflow commit was replaced locally; published remote history was not rewritten.
+Initial GitHub CI workflow creation was rejected for missing OAuth `workflow` scope.
+The workflow was initially stored as a documentation example. The unpushed workflow
+commit was replaced locally; published remote history was not rewritten.
+
+Follow-up: GitHub CLI reauthentication granted `workflow` scope. The reviewed workflow
+is now installed at `.github/workflows/build.yml`. Its exact restore/build/test/replay
+commands passed locally: 52 tests, zero build warnings/errors, and no rejected synthetic
+packets. Hosted run results are recorded by GitHub Actions separately from local evidence.
