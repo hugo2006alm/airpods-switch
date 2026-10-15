@@ -1,0 +1,17 @@
+# Research checkouts are independent, read-only upstream references.
+/.research/
+/.tools/
+/.local/
+/artifacts/
+/logs/
+**/bin/
+**/obj/
+**/.vs/
+**/build/
+*.user
+*.suo
+*.etl
+*.pcap
+*.pcapng
+*.backup.json
+*.private.json
