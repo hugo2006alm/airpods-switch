@@ -207,15 +207,17 @@ internal sealed class TrayForm : Form
                 string ended = "Control session ended. Refresh devices and reconnect.";
                 try { await active.RunAsync(cancel.Token); }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested) { ended = "Stopped. Reconnect explicitly when ready."; }
-                catch (ConnectionInterruptedException error) { ended = ConnectionHealth.Instruction(error.Reason); log.Write("recovery", "interrupted", error.Reason.ToString()); }
+                catch (ConnectionInterruptedException error) { ended = ConnectionHealth.Instruction(error.Reason); TryLog(log, "recovery", "interrupted", error.Reason.ToString()); }
                 catch (Exception error)
                 {
-                    log.Write("tray", "session_failed", error.GetType().Name);
+                    TryLog(log, "tray", "session_failed", error.GetType().Name);
                     ended = "Control connection failed. Check Bluetooth, the selected output and transport support, then refresh devices and reconnect.";
                 }
                 finally
                 {
-                    await writer.DisposeAsync();
+                    try { await writer.DisposeAsync(); }
+                    catch (IOException) { ended = "Session ended; its log could not be saved. Check available disk space and folder permissions."; }
+                    catch (UnauthorizedAccessException) { ended = "Session ended; its log could not be saved. Check folder permissions."; }
                     Dispatch(async () =>
                     {
                         if (!ReferenceEquals(controller, active)) return;
@@ -253,7 +255,7 @@ internal sealed class TrayForm : Form
             if (notify.Checked && notifications is not null)
             {
                 try { notifications.Offer(id); }
-                catch (Exception error) { log.Write("notification", "failed", error.GetType().Name); status.Text = "Notification unavailable. Use Switch here."; }
+                catch (Exception error) { TryLog(log, "notification", "failed", error.GetType().Name); status.Text = "Notification unavailable. Use Switch here."; }
             }
         }
         if (decision.Action is SwitchAction.Cancel or SwitchAction.Confirmed or SwitchAction.Failed or SwitchAction.SendTakeover)
@@ -267,6 +269,13 @@ internal sealed class TrayForm : Form
                 : "Connected. " + decision.Reason;
     }
     private void ClearOffer() { offeredId = null; switchNow.Enabled = reject.Enabled = false; }
+    private static void TryLog(EventLog log, string subsystem, string eventType, string result)
+    {
+        try { log.Write(subsystem, eventType, result); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        catch (ObjectDisposedException) { }
+    }
     private async Task ClearNotificationsAsync()
     {
         try { if (notifications is not null) await notifications.ClearAsync().WaitAsync(TimeSpan.FromSeconds(3)); }
@@ -284,7 +293,11 @@ internal sealed class TrayForm : Form
             setupGeneration++;
             var active = controller;
             running?.Cancel(); ClearOffer();
-            if (worker is { } task) await task;
+            if (worker is { } task)
+            {
+                try { await task; }
+                catch (Exception error) when (error is not OutOfMemoryException) { /* Always release a failed session so it can be refreshed. */ }
+            }
             // Worker cleanup can already have run on the UI thread during the await.
             if (ReferenceEquals(controller, active))
             {
